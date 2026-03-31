@@ -1,6 +1,8 @@
 using Serilog;
 using FeatureService.Api;
 using Prometheus;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 
 Log.Logger = new LoggerConfiguration()
     .WriteTo.Console()
@@ -34,6 +36,47 @@ try
     builder.AddFeatureServices();
 
     var app = builder.Build();
+
+    // Auto-create EF Core schema (creates only if Feature Service tables don't exist)
+    using (var scope = app.Services.CreateScope())
+    {
+        var db = scope.ServiceProvider.GetRequiredService<FeatureService.Api.Infrastructure.Persistence.AppDbContext>();
+        
+        // Check if Feature Service tables exist by probing one
+        var tablesExist = false;
+        try
+        {
+            await db.Database.ExecuteSqlRawAsync("SELECT 1 FROM wallets LIMIT 0");
+            tablesExist = true;
+        }
+        catch { /* Table doesn't exist yet */ }
+        
+        if (!tablesExist)
+        {
+            Log.Information("Creating Feature Service database tables...");
+            var sql = db.Database.GenerateCreateScript();
+            // Split by GO or semicolons and execute each statement separately, ignoring "already exists" errors
+            var statements = sql.Split(new[] { ";\n", ";\r\n" }, StringSplitOptions.RemoveEmptyEntries);
+            foreach (var stmt in statements)
+            {
+                var trimmed = stmt.Trim();
+                if (string.IsNullOrEmpty(trimmed)) continue;
+                try
+                {
+                    await db.Database.ExecuteSqlRawAsync(trimmed);
+                }
+                catch (Npgsql.PostgresException ex) when (ex.SqlState == "42P07" || ex.SqlState == "42710")
+                {
+                    // 42P07 = duplicate table, 42710 = duplicate type — skip
+                }
+            }
+            Log.Information("Feature Service database tables created successfully");
+        }
+        else
+        {
+            Log.Information("Feature Service database tables already exist");
+        }
+    }
 
     app.UseSentryTracing();
 

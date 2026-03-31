@@ -1,0 +1,12 @@
+.git
+.env
+.env.*
+*.md
+.vscode
+.idea
+__pycache__/
+*.pyc
+.pytest_cache/
+profiles/
+screenshots/
+.venv/

@@ -14,6 +14,8 @@ services:
       - "127.0.0.1:5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql
+    networks:
+      - aivalid-net
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U aivalid -d aivalid"]
       interval: 5s
@@ -25,6 +27,151 @@ services:
         limits:
           memory: 1G
 
+  # =============================================================
+  # Go Backend — Auth, users, cases, workflow, market proxy
+  # =============================================================
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: aivalid-backend
+    restart: unless-stopped
+    env_file: ./backend/.env
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - aivalid-net
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  # =============================================================
+  # Feature Service (.NET 10) — Finance, moderation, browser profiles
+  # =============================================================
+  feature-service:
+    build:
+      context: ./feature-service
+      dockerfile: Dockerfile
+    container_name: aivalid-feature
+    restart: unless-stopped
+    env_file: ./feature-service/.env
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - aivalid-net
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+
+  # =============================================================
+  # Browser Service (Python) — Cloud Anti-Detect Browser + VNC
+  # =============================================================
+  browser-service:
+    build:
+      context: ./browser-service
+      dockerfile: Dockerfile
+    container_name: aivalid-browser
+    restart: unless-stopped
+    env_file: ./browser-service/.env
+    depends_on:
+      feature-service:
+        condition: service_healthy
+    ports:
+      # VNC ports (x11vnc) — needed for noVNC WebSocket passthrough
+      - "127.0.0.1:6200-6299:6200-6299"
+      # WebSocket ports (websockify)
+      - "127.0.0.1:6300-6399:6300-6399"
+    volumes:
+      - browser-profiles:/data/profiles
+      - browser-screenshots:/data/screenshots
+    networks:
+      - aivalid-net
+    deploy:
+      resources:
+        limits:
+          memory: 3G
+
+  # =============================================================
+  # Nginx — Reverse proxy + SSL termination
+  # =============================================================
+  nginx:
+    build:
+      context: ./deploy/nginx
+      dockerfile: Dockerfile
+    container_name: aivalid-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+      - /var/www/html:/var/www/html:ro
+      - ./deploy/nginx/aivalid.conf:/etc/nginx/conf.d/aivalid.conf:ro
+    depends_on:
+      backend:
+        condition: service_healthy
+      feature-service:
+        condition: service_healthy
+    networks:
+      - aivalid-net
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+
+  # =============================================================
+  # Prometheus — Metrics collection
+  # =============================================================
+  prometheus:
+    image: prom/prometheus:v3.4.0
+    container_name: aivalid-prometheus
+    restart: unless-stopped
+    volumes:
+      - ./deploy/prometheus:/etc/prometheus:ro
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=30d'
+    networks:
+      - aivalid-net
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  # =============================================================
+  # Alertmanager — Alert routing (Telegram notifications)
+  # =============================================================
+  alertmanager:
+    image: prom/alertmanager:v0.28.1
+    container_name: aivalid-alertmanager
+    restart: unless-stopped
+    volumes:
+      - ./deploy/alertmanager:/etc/alertmanager:ro
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+    networks:
+      - aivalid-net
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+
 volumes:
   pgdata:
     driver: local
+  browser-profiles:
+    driver: local
+  browser-screenshots:
+    driver: local
+  prometheus-data:
+    driver: local
+
+networks:
+  aivalid-net:
+    driver: bridge

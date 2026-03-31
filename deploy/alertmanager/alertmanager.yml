@@ -34,7 +34,7 @@ receivers:
   - name: 'telegram'
     telegram_configs:
       - bot_token: '<TELEGRAM_BOT_TOKEN>'
-        chat_id: 0  # Replace with real chat_id
+        chat_id: -1  # Replace with real Telegram chat_id
         parse_mode: 'HTML'
         message: |
           🚨 <b>{{ .GroupLabels.alertname }}</b>

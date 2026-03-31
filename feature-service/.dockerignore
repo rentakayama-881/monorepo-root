@@ -1,0 +1,10 @@
+.git
+.env
+.env.*
+*.md
+.vscode
+.idea
+**/bin/
+**/obj/
+**/TestResults/
+src/FeatureService.Api.Tests/
