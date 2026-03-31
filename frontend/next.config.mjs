@@ -50,7 +50,7 @@ const nextConfig = {
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: blob: https://*.supabase.co https://i.ibb.co",
               "font-src 'self'",
-              "connect-src 'self' https://api.aivalid.id https://feature.aivalid.id https://*.sentry.io",
+              "connect-src 'self' https://api.aivalid.id https://feature.aivalid.id https://browser.aivalid.id wss://browser.aivalid.id https://*.sentry.io",
               "object-src 'none'",
               "frame-ancestors 'none'",
               "base-uri 'self'",

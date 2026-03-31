@@ -22,23 +22,27 @@ function useAuthToken() {
 }
 
 // ---------------------------------------------------------------------------
-// Browser Service base URL
+// Service base URLs
 // ---------------------------------------------------------------------------
 
 function getBrowserBase() {
   return process.env.NEXT_PUBLIC_BROWSER_API_URL || "https://browser.aivalid.id";
 }
 
+function getFeatureBase() {
+  return process.env.NEXT_PUBLIC_FEATURE_API_URL || "https://feature.aivalid.id";
+}
+
 // ---------------------------------------------------------------------------
 // Hooks
 // ---------------------------------------------------------------------------
 
-/** Fetch all browser profiles for current user */
+/** Fetch all browser profiles for current user (→ Feature Service) */
 export function useProfiles() {
   const token = useAuthToken();
 
   const { data, error, isLoading, isValidating, mutate } = useSWR(
-    token ? `${getBrowserBase()}/api/v1/profiles` : null,
+    token ? `${getFeatureBase()}/api/v1/browser/profiles` : null,
     authFetcher,
     {
       ...swrConfig,
@@ -55,17 +59,17 @@ export function useProfiles() {
   };
 }
 
-/** Fetch active sessions */
+/** Fetch active sessions (→ Feature Service) */
 export function useActiveSessions() {
   const token = useAuthToken();
 
   const { data, error, isLoading, mutate } = useSWR(
-    token ? `${getBrowserBase()}/api/v1/sessions?active=true` : null,
+    token ? `${getFeatureBase()}/api/v1/browser/sessions?active=true` : null,
     authFetcher,
     {
       ...swrConfig,
       revalidateOnFocus: true,
-      refreshInterval: 10000, // poll every 10s for active sessions
+      refreshInterval: 10000,
     }
   );
 
@@ -77,42 +81,44 @@ export function useActiveSessions() {
   };
 }
 
-/** Fetch pricing info */
+/** Fetch pricing info (→ Feature Service) */
 export function usePricing() {
   const token = useAuthToken();
 
   const { data, error, isLoading } = useSWR(
-    token ? `${getBrowserBase()}/api/v1/pricing` : null,
+    token ? `${getFeatureBase()}/api/v1/browser/sessions/pricing` : null,
     authFetcher,
     {
       ...swrConfig,
       revalidateOnFocus: false,
-      dedupingInterval: 60000, // pricing doesn't change often
+      dedupingInterval: 60000,
     }
   );
 
   return {
-    pricing: data,
-    pricePerHour: data?.price_per_hour ?? 10000,
-    pricePerMinute: data?.price_per_minute ?? Math.ceil((data?.price_per_hour ?? 10000) / 60),
+    pricing: data?.data ?? data,
+    pricePerHour: data?.data?.pricePerHourIdr ?? data?.price_per_hour ?? 10000,
+    pricePerMinute: data?.data?.billingIntervalMinutes
+      ? Math.ceil((data?.data?.pricePerHourIdr ?? 10000) / 60)
+      : Math.ceil((data?.price_per_hour ?? 10000) / 60),
     isLoading,
     error,
   };
 }
 
-/** Fetch single session status (for session viewer page) */
+/** Fetch single session status (→ Browser Service) */
 export function useSessionStatus(sessionId) {
   const token = useAuthToken();
 
   const { data, error, isLoading, mutate } = useSWR(
     token && sessionId
-      ? `${getBrowserBase()}/api/v1/sessions/${encodeURIComponent(sessionId)}`
+      ? `${getBrowserBase()}/api/v1/sessions/${encodeURIComponent(sessionId)}/status`
       : null,
     authFetcher,
     {
       ...swrConfig,
       revalidateOnFocus: true,
-      refreshInterval: 5000, // poll frequently for active session
+      refreshInterval: 5000,
     }
   );
 
