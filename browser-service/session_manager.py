@@ -7,6 +7,7 @@ import asyncio
 import logging
 import os
 import signal
+import time
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -25,6 +26,7 @@ class SessionProcess:
     display_num: int
     vnc_port: int
     ws_port: int
+    started_at: float = field(default_factory=time.monotonic)
     xvfb_pid: int | None = None
     browser_pid: int | None = None
     vnc_pid: int | None = None
@@ -43,6 +45,7 @@ class SessionManager:
         self._display_counter: int = 100
         self._playwright: object | None = None  # Reusable Playwright instance
         self._watchdog_task: asyncio.Task | None = None
+        self._profile_cleanup_task: asyncio.Task | None = None
 
     @property
     def active_count(self) -> int:
@@ -63,35 +66,53 @@ class SessionManager:
         if self._watchdog_task is None or self._watchdog_task.done():
             self._watchdog_task = asyncio.create_task(self._watchdog_loop())
             logger.info("Process watchdog started")
+        if self._profile_cleanup_task is None or self._profile_cleanup_task.done():
+            self._profile_cleanup_task = asyncio.create_task(self._profile_cleanup_loop())
+            logger.info("Profile cleanup task started")
 
     async def stop_watchdog(self) -> None:
         """Stop the background watchdog."""
-        if self._watchdog_task and not self._watchdog_task.done():
-            self._watchdog_task.cancel()
-            try:
-                await self._watchdog_task
-            except asyncio.CancelledError:
-                pass
-            logger.info("Process watchdog stopped")
+        for task, label in [
+            (self._watchdog_task, "Process watchdog"),
+            (self._profile_cleanup_task, "Profile cleanup"),
+        ]:
+            if task and not task.done():
+                task.cancel()
+                try:
+                    await task
+                except asyncio.CancelledError:
+                    pass
+                logger.info("%s stopped", label)
+        self._watchdog_task = None
+        self._profile_cleanup_task = None
 
     async def _watchdog_loop(self) -> None:
-        """Check session processes every 15 seconds. Auto-stop crashed sessions."""
+        """Check session processes every 15 seconds. Auto-stop crashed and timed-out sessions."""
+        max_duration_s = settings.session_max_duration_minutes * 60
         while True:
             try:
                 await asyncio.sleep(15)
-                dead_sessions = []
+                stop_sessions: list[tuple[str, str]] = []  # (session_id, reason)
                 for sid, session in list(self._sessions.items()):
                     if self._is_session_dead(session):
                         logger.warning(
                             "Watchdog: sesi %s terdeteksi mati — auto-stopping",
                             sid,
                         )
-                        dead_sessions.append(sid)
+                        stop_sessions.append((sid, "process_crash"))
+                    elif max_duration_s > 0:
+                        elapsed = time.monotonic() - session.started_at
+                        if elapsed >= max_duration_s:
+                            logger.warning(
+                                "Watchdog: sesi %s melebihi batas waktu (%.0f menit) — auto-stopping",
+                                sid, elapsed / 60,
+                            )
+                            stop_sessions.append((sid, "timeout"))
 
-                for sid in dead_sessions:
+                for sid, reason in stop_sessions:
                     try:
                         await self.stop_session(sid)
-                        await self._notify_billing_stop(sid)
+                        await self._notify_billing_stop(sid, reason=reason)
                     except Exception as e:
                         logger.error("Watchdog gagal stop sesi %s: %s", sid, e)
             except asyncio.CancelledError:
@@ -114,19 +135,62 @@ class SessionManager:
                 return True
         return False
 
-    async def _notify_billing_stop(self, session_id: str) -> None:
-        """Notify Feature Service to stop billing for a crashed session."""
+    async def _notify_billing_stop(self, session_id: str, *, reason: str = "process_crash") -> None:
+        """Notify Feature Service to stop billing for a crashed/timed-out session."""
         import httpx
         try:
             async with httpx.AsyncClient(timeout=10.0) as client:
                 await client.post(
                     f"{settings.feature_service_url}/api/v1/browser/sessions/{session_id}/stop",
                     headers={"X-Service-Token": settings.feature_service_token},
-                    json={"reason": "process_crash"},
+                    json={"reason": reason},
                 )
-                logger.info("Billing stop notified for session %s", session_id)
+                logger.info("Billing stop notified for session %s (reason: %s)", session_id, reason)
         except Exception as e:
             logger.error("Gagal notify billing stop untuk %s: %s", session_id, e)
+
+    async def _profile_cleanup_loop(self) -> None:
+        """Periodically delete profile directories not modified in PROFILE_MAX_AGE_DAYS."""
+        interval_s = settings.profile_cleanup_interval_hours * 3600
+        max_age_s = settings.profile_max_age_days * 86400
+        profiles_dir = Path(settings.browser_profiles_dir)
+
+        while True:
+            try:
+                await asyncio.sleep(interval_s)
+                if not profiles_dir.is_dir():
+                    continue
+
+                # Collect profile IDs with active sessions (skip these)
+                active_profile_ids = {s.profile_id for s in self._sessions.values()}
+
+                now = time.time()
+                removed = 0
+                for entry in profiles_dir.iterdir():
+                    if not entry.is_dir():
+                        continue
+                    if entry.name in active_profile_ids:
+                        continue
+                    try:
+                        mtime = entry.stat().st_mtime
+                        age = now - mtime
+                        if age >= max_age_s:
+                            import shutil
+                            shutil.rmtree(entry, ignore_errors=True)
+                            removed += 1
+                            logger.info(
+                                "Profile cleanup: hapus %s (umur %.0f hari)",
+                                entry.name, age / 86400,
+                            )
+                    except OSError as e:
+                        logger.warning("Profile cleanup gagal stat %s: %s", entry, e)
+
+                if removed:
+                    logger.info("Profile cleanup selesai: %d profil dihapus", removed)
+            except asyncio.CancelledError:
+                break
+            except Exception as e:
+                logger.error("Profile cleanup error: %s", e)
 
     # ──────────────────────────────────────────────────────────────────────
     # Internal helpers

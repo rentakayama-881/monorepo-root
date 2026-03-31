@@ -25,6 +25,13 @@ class Settings(BaseSettings):
     # Billing
     billing_interval_seconds: int = 60
 
+    # Session auto-timeout (minutes). 0 = disabled.
+    session_max_duration_minutes: int = 240  # 4 hours
+
+    # Profile data auto-cleanup
+    profile_max_age_days: int = 30
+    profile_cleanup_interval_hours: int = 24
+
     # WebSocket domain for VNC connections
     browser_ws_domain: str = "browser.aivalid.id"
 

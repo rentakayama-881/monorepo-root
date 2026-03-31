@@ -158,6 +158,18 @@ export default function SessionViewerClient() {
     return () => document.removeEventListener("fullscreenchange", onChange);
   }, []);
 
+  // Warn user when navigating away with active session
+  useEffect(() => {
+    if (!session || session.status !== "running") return;
+    const handler = (e) => {
+      e.preventDefault();
+      // Modern browsers ignore custom messages; the standard prompt is shown
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [session]);
+
   // Loading
   if (isLoading) {
     return (
