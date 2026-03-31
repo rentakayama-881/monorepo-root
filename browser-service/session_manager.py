@@ -321,6 +321,13 @@ class SessionManager:
             # Ensure user_data_dir exists
             Path(user_data_dir).mkdir(parents=True, exist_ok=True)
 
+            # Remove stale Chromium singleton locks from prior crashed sessions
+            for lock_name in ("SingletonLock", "SingletonCookie", "SingletonSocket"):
+                lock_file = Path(user_data_dir) / lock_name
+                if lock_file.exists():
+                    lock_file.unlink(missing_ok=True)
+                    logger.info("Removed stale lock: %s", lock_file)
+
             seed = profile_seed(user_data_dir)
             nav_overrides = get_navigator_overrides(user_agent or "")
             gpu = GPU_RENDERERS[seed % len(GPU_RENDERERS)]
