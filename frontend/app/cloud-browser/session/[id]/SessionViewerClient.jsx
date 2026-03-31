@@ -23,15 +23,79 @@ export default function SessionViewerClient() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState("connecting");
   const reconnectCountRef = useRef(0);
-  const iframeRef = useRef(null);
-  const reconnectTimerRef = useRef(null);
+  const rfbRef = useRef(null);
+  const containerRef = useRef(null);
 
-  // Determine VNC URL from session data
-  const wsPort = session?.vnc_port || session?.ws_port;
-  const browserBase = process.env.NEXT_PUBLIC_BROWSER_API_URL || "https://browser.aivalid.id";
-  const vncUrl = wsPort
-    ? `${browserBase}/vnc/?autoconnect=true&resize=scale&path=ws/${wsPort}`
-    : null;
+  // Extract WebSocket URL from session data
+  const vncWsUrl = session?.vnc_ws_url ?? null;
+
+  // Connect to VNC via @novnc/novnc RFB
+  useEffect(() => {
+    if (!vncWsUrl || !containerRef.current) return;
+
+    let rfb = null;
+    let destroyed = false;
+
+    async function connect() {
+      // Dynamic import — @novnc/novnc requires browser globals (window, document)
+      const { default: RFB } = await import("@novnc/novnc/lib/rfb");
+
+      if (destroyed) return;
+
+      try {
+        rfb = new RFB(containerRef.current, vncWsUrl, {
+          wsProtocols: ["binary"],
+        });
+        rfb.scaleViewport = true;
+        rfb.resizeSession = false;
+        rfb.showDotCursor = true;
+
+        rfb.addEventListener("connect", () => {
+          if (!destroyed) {
+            reconnectCountRef.current = 0;
+            setConnectionStatus("connected");
+          }
+        });
+
+        rfb.addEventListener("disconnect", (e) => {
+          if (destroyed) return;
+          if (e.detail.clean) {
+            setConnectionStatus("disconnected");
+            return;
+          }
+          // Unclean disconnect — try to reconnect
+          if (reconnectCountRef.current >= MAX_RECONNECT_ATTEMPTS) {
+            setConnectionStatus("failed");
+            return;
+          }
+          reconnectCountRef.current += 1;
+          setConnectionStatus("reconnecting");
+          setTimeout(() => {
+            if (!destroyed) connect();
+          }, RECONNECT_INTERVAL_MS);
+        });
+
+        rfb.addEventListener("credentialsrequired", () => {
+          // No password set on x11vnc (-nopw)
+          if (rfb) rfb.sendCredentials({ password: "" });
+        });
+
+        rfbRef.current = rfb;
+      } catch (err) {
+        if (!destroyed) setConnectionStatus("failed");
+      }
+    }
+
+    connect();
+
+    return () => {
+      destroyed = true;
+      if (rfbRef.current) {
+        try { rfbRef.current.disconnect(); } catch {}
+        rfbRef.current = null;
+      }
+    };
+  }, [vncWsUrl]);
 
   // Auto-redirect when session is stopped
   useEffect(() => {
@@ -42,35 +106,6 @@ export default function SessionViewerClient() {
       return () => clearTimeout(timer);
     }
   }, [session, isLoading, router]);
-
-  // Iframe load handler — detect connection success/failure
-  const handleIframeLoad = useCallback(() => {
-    reconnectCountRef.current = 0;
-    setConnectionStatus("connected");
-  }, []);
-
-  const handleIframeError = useCallback(() => {
-    if (reconnectCountRef.current >= MAX_RECONNECT_ATTEMPTS) {
-      setConnectionStatus("failed");
-      return;
-    }
-    setConnectionStatus("reconnecting");
-    reconnectCountRef.current += 1;
-
-    if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
-    reconnectTimerRef.current = setTimeout(() => {
-      if (iframeRef.current && vncUrl) {
-        iframeRef.current.src = vncUrl + "&_retry=" + reconnectCountRef.current;
-      }
-    }, RECONNECT_INTERVAL_MS);
-  }, [vncUrl]);
-
-  // Cleanup reconnect timer
-  useEffect(() => {
-    return () => {
-      if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
-    };
-  }, []);
 
   // Redirect to dashboard if reconnection fully failed
   useEffect(() => {
@@ -92,6 +127,10 @@ export default function SessionViewerClient() {
     setStopError(null);
     try {
       await stopSession(sessionId);
+      if (rfbRef.current) {
+        try { rfbRef.current.disconnect(); } catch {}
+        rfbRef.current = null;
+      }
       router.replace("/cloud-browser");
     } catch (err) {
       setStopError(err?.message || "Gagal menghentikan sesi.");
@@ -203,19 +242,10 @@ export default function SessionViewerClient() {
         </div>
       ) : null}
 
-      {/* VNC Viewer */}
+      {/* VNC Viewer — noVNC renders its canvas into this div */}
       <div className="flex-1 bg-black relative">
-        {vncUrl ? (
-          <iframe
-            ref={iframeRef}
-            src={vncUrl}
-            title="Browser Session"
-            className="absolute inset-0 h-full w-full border-0"
-            allow="clipboard-read; clipboard-write"
-            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-            onLoad={handleIframeLoad}
-            onError={handleIframeError}
-          />
+        {vncWsUrl ? (
+          <div ref={containerRef} className="absolute inset-0 h-full w-full" />
         ) : (
           <div className="flex h-full items-center justify-center">
             <div className="text-center space-y-2">

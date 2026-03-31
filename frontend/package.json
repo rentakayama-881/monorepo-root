@@ -25,6 +25,7 @@
   },
   "dependencies": {
     "@fingerprintjs/fingerprintjs": "^5.1.0",
+    "@novnc/novnc": "^1.6.0",
     "@sentry/browser": "^10.39.0",
     "@sentry/nextjs": "^10.39.0",
     "@tailwindcss/container-queries": "^0.1.1",

@@ -31,6 +31,19 @@ jest.mock("@/lib/swr", () => ({
   })),
 }));
 
+// Mock @novnc/novnc — RFB requires a browser environment
+jest.mock("@novnc/novnc/lib/rfb", () => {
+  const MockRFB = jest.fn().mockImplementation(() => ({
+    scaleViewport: false,
+    resizeSession: false,
+    showDotCursor: false,
+    addEventListener: jest.fn(),
+    disconnect: jest.fn(),
+    sendCredentials: jest.fn(),
+  }));
+  return { __esModule: true, default: MockRFB };
+});
+
 describe("SessionViewerClient", () => {
   beforeEach(() => {
     replaceMock.mockReset();
@@ -38,7 +51,7 @@ describe("SessionViewerClient", () => {
     jest.useFakeTimers();
 
     usePricing.mockReturnValue({
-      pricing: { price_per_hour: 10000 },
+      pricing: { pricePerHourIdr: 10000 },
     });
   });
 
@@ -58,12 +71,12 @@ describe("SessionViewerClient", () => {
     expect(screen.getByText("Memuat sesi browser...")).toBeInTheDocument();
   });
 
-  it("renders iframe when session active", () => {
+  it("renders VNC container when session active with vnc_ws_url", () => {
     useSessionStatus.mockReturnValue({
       session: {
-        id: "session-123",
-        status: "running",
-        vnc_port: 5900,
+        session_id: "session-123",
+        status: "active",
+        vnc_ws_url: "wss://browser.aivalid.id/ws/6300",
         started_at: new Date().toISOString(),
       },
       isLoading: false,
@@ -72,14 +85,30 @@ describe("SessionViewerClient", () => {
     });
 
     render(<SessionViewerClient />);
-    const iframe = screen.getByTitle("Browser Session");
-    expect(iframe).toBeInTheDocument();
-    expect(iframe.tagName).toBe("IFRAME");
+    // Toolbar should render with session info
+    expect(screen.getByText("Hentikan Sesi")).toBeInTheDocument();
+  });
+
+  it("shows waiting state when vnc_ws_url is null", () => {
+    useSessionStatus.mockReturnValue({
+      session: {
+        session_id: "session-123",
+        status: "active",
+        vnc_ws_url: null,
+        started_at: new Date().toISOString(),
+      },
+      isLoading: false,
+      error: null,
+      mutate: jest.fn(),
+    });
+
+    render(<SessionViewerClient />);
+    expect(screen.getByText("Menunggu koneksi ke browser...")).toBeInTheDocument();
   });
 
   it("redirects when session stopped", () => {
     useSessionStatus.mockReturnValue({
-      session: { id: "session-123", status: "stopped" },
+      session: { session_id: "session-123", status: "stopped" },
       isLoading: false,
       error: null,
       mutate: jest.fn(),

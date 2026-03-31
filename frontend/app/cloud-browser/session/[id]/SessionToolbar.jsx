@@ -35,7 +35,9 @@ export default function SessionToolbar({
 
   const balance = wallet?.data?.balance ?? wallet?.balance ?? 0;
   const pricePerMinute =
-    pricing?.price_per_minute ?? Math.ceil((pricing?.price_per_hour ?? 10000) / 60);
+    pricing?.pricePerMinute ??
+    pricing?.price_per_minute ??
+    Math.ceil((pricing?.pricePerHourIdr ?? pricing?.price_per_hour ?? 10000) / 60);
 
   // Timer: elapsed seconds since session started
   const [elapsed, setElapsed] = useState(0);
