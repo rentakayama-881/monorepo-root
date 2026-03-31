@@ -103,7 +103,7 @@ export default function CloudBrowserClient() {
       try {
         const result = await startSession(profile.id);
         await mutateSessions();
-        const sessionId = result?.session?.id || result?.id;
+        const sessionId = result?.session_id || result?.session?.id || result?.id;
         if (sessionId) {
           router.push(`/cloud-browser/session/${encodeURIComponent(sessionId)}`);
         }
