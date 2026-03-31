@@ -1,0 +1,30 @@
+services:
+  # =============================================================
+  # PostgreSQL 18 — Single source of truth for all services
+  # =============================================================
+  postgres:
+    image: postgres:18
+    container_name: aivalid-postgres
+    restart: unless-stopped
+    env_file: .env.docker
+    environment:
+      POSTGRES_USER: aivalid
+      POSTGRES_DB: aivalid
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aivalid -d aivalid"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+
+volumes:
+  pgdata:
+    driver: local

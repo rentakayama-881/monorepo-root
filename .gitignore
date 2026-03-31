@@ -111,3 +111,4 @@ temp_appsettings.json
 debug-*.sh
 *.debug
 backups/
+.env.docker
