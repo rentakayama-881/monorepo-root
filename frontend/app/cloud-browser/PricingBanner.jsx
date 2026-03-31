@@ -13,7 +13,7 @@ export default function PricingBanner({ pricing }) {
   const { wallet, isLoading: walletLoading } = useWallet();
 
   const balance = wallet?.data?.balance ?? wallet?.balance ?? 0;
-  const pricePerHour = pricing?.price_per_hour ?? 10000;
+  const pricePerHour = pricing?.pricePerHourIdr ?? pricing?.price_per_hour ?? 10000;
 
   return (
     <div className={cn("rounded-[var(--radius)] bg-card p-4", "border border-border/50")}>

@@ -51,7 +51,7 @@ export function useProfiles() {
   );
 
   return {
-    profiles: data?.profiles ?? data?.data ?? [],
+    profiles: data?.data?.profiles ?? data?.profiles ?? [],
     isLoading,
     isValidating,
     error,
@@ -74,7 +74,7 @@ export function useActiveSessions() {
   );
 
   return {
-    sessions: data?.sessions ?? data?.data ?? [],
+    sessions: data?.data?.sessions ?? data?.sessions ?? [],
     isLoading,
     error,
     mutate,
@@ -95,12 +95,13 @@ export function usePricing() {
     }
   );
 
+  const pricing = data?.data ?? data;
+  const perHour = pricing?.pricePerHourIdr ?? pricing?.price_per_hour ?? 10000;
+
   return {
-    pricing: data?.data ?? data,
-    pricePerHour: data?.data?.pricePerHourIdr ?? data?.price_per_hour ?? 10000,
-    pricePerMinute: data?.data?.billingIntervalMinutes
-      ? Math.ceil((data?.data?.pricePerHourIdr ?? 10000) / 60)
-      : Math.ceil((data?.price_per_hour ?? 10000) / 60),
+    pricing,
+    pricePerHour: perHour,
+    pricePerMinute: Math.ceil(perHour / 60),
     isLoading,
     error,
   };
