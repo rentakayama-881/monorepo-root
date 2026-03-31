@@ -28,7 +28,7 @@ export function useAccountPage() {
   const [me, setMe] = useState(null);
 
   const featureBase = useMemo(
-    () => process.env.NEXT_PUBLIC_FEATURE_SERVICE_URL || "https://feature.aivalid.id",
+    () => process.env.NEXT_PUBLIC_FEATURE_API_URL || "https://feature.aivalid.id",
     []
   );
 

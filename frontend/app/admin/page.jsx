@@ -10,7 +10,7 @@ import { getAdminToken } from "@/lib/adminAuth";
 import { unwrapApiData } from "@/lib/apiHelpers";
 
 const FEATURE_SERVICE_URL =
-  process.env.NEXT_PUBLIC_FEATURE_SERVICE_URL || "https://feature.aivalid.id";
+  process.env.NEXT_PUBLIC_FEATURE_API_URL || "https://feature.aivalid.id";
 
 function extractApiErrorMessage(payload, fallback) {
   return (

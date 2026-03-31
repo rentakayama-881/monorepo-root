@@ -156,7 +156,7 @@ export default function ValidationCaseRecordPage({ initialCaseData = null }) {
   const disableSubmitFinalOffer = finalOfferSubmitting || offersLoading || hasSubmittedFinalOffer;
 
   const featureBase = (
-    process.env.NEXT_PUBLIC_FEATURE_SERVICE_URL || "https://feature.aivalid.id"
+    process.env.NEXT_PUBLIC_FEATURE_API_URL || "https://feature.aivalid.id"
   ).replace(/\/+$/, "");
   const certifiedDownloadHref =
     certifiedId && !isSyntheticArtifactMarker(certifiedId)

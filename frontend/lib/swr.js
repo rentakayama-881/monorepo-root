@@ -108,7 +108,7 @@ export function useUser() {
 
 export function useWallet() {
   const token = useAuthToken();
-  const featureBase = process.env.NEXT_PUBLIC_FEATURE_SERVICE_URL || "https://feature.aivalid.id";
+  const featureBase = process.env.NEXT_PUBLIC_FEATURE_API_URL || "https://feature.aivalid.id";
 
   const { data, error, isLoading, mutate } = useSWR(
     token ? `${featureBase}/api/v1/wallets/me` : null,
@@ -238,7 +238,7 @@ export function invalidateCache(keyOrKeys) {
 
 export function invalidateUserData() {
   const base = getApiBase();
-  const featureBase = process.env.NEXT_PUBLIC_FEATURE_SERVICE_URL || "https://feature.aivalid.id";
+  const featureBase = process.env.NEXT_PUBLIC_FEATURE_API_URL || "https://feature.aivalid.id";
   globalMutate(`${base}/api/v1/account/me`);
   globalMutate(`${featureBase}/api/v1/wallets/me`);
   globalMutate(`${base}/api/v1/validation-cases/me`);

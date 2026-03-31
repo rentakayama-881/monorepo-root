@@ -16,7 +16,7 @@ export { unwrapFeatureData, extractFeatureItems, extractTotalCount } from "./fea
  * Get Feature Service base URL
  */
 export function getFeatureApiBase() {
-  return process.env.NEXT_PUBLIC_FEATURE_SERVICE_URL || "https://feature.aivalid.id";
+  return process.env.NEXT_PUBLIC_FEATURE_API_URL || "https://feature.aivalid.id";
 }
 
 function hasHeader(headers, key) {

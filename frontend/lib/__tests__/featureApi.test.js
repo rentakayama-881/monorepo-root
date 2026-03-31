@@ -40,12 +40,12 @@ describe("featureApi.js", () => {
 
   describe("getFeatureApiBase", () => {
     it("should return env variable when set", () => {
-      process.env.NEXT_PUBLIC_FEATURE_SERVICE_URL = "https://custom.example.com";
+      process.env.NEXT_PUBLIC_FEATURE_API_URL = "https://custom.example.com";
       expect(getFeatureApiBase()).toBe("https://custom.example.com");
     });
 
     it("should return default when env not set", () => {
-      delete process.env.NEXT_PUBLIC_FEATURE_SERVICE_URL;
+      delete process.env.NEXT_PUBLIC_FEATURE_API_URL;
       expect(getFeatureApiBase()).toBe("https://feature.aivalid.id");
     });
   });

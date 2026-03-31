@@ -70,7 +70,7 @@ export default function useProfileSidebar({ onClose, triggerRef }) {
 
         try {
           const featureBase =
-            process.env.NEXT_PUBLIC_FEATURE_SERVICE_URL || "https://feature.aivalid.id";
+            process.env.NEXT_PUBLIC_FEATURE_API_URL || "https://feature.aivalid.id";
           const walletRes = await fetchWithAuth(`${featureBase}/api/v1/wallets/me`, { signal });
           if (walletRes.ok) {
             const walletData = await walletRes.json();

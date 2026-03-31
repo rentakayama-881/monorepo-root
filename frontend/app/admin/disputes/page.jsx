@@ -13,7 +13,7 @@ import {
   getCategoryLabel,
 } from "@/lib/disputes/helpers";
 
-const API_BASE = process.env.NEXT_PUBLIC_FEATURE_SERVICE_URL || "https://feature.aivalid.id";
+const API_BASE = process.env.NEXT_PUBLIC_FEATURE_API_URL || "https://feature.aivalid.id";
 
 function normalizeDispute(item) {
   return {

@@ -6,7 +6,7 @@ import { getAdminToken } from "@/lib/adminAuth";
 import { unwrapFeatureData, extractFeatureItems } from "@/lib/featureApi";
 import { formatDateTime } from "@/lib/format";
 
-const FEATURE_SERVICE_URL = process.env.NEXT_PUBLIC_FEATURE_SERVICE_URL || "";
+const FEATURE_SERVICE_URL = process.env.NEXT_PUBLIC_FEATURE_API_URL || "";
 
 function normalizeAuditLog(item) {
   return {
