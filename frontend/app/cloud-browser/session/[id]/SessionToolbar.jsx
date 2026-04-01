@@ -104,16 +104,16 @@ export default function SessionToolbar({
         <span className="font-mono tabular-nums">{formatDuration(elapsed)}</span>
       </div>
 
-      {/* Running cost — hidden on very small screens */}
-      <div className="hidden xs:flex items-center gap-0.5 sm:gap-1 text-muted-foreground shrink-0">
-        <span className="font-semibold text-foreground">{formatCurrency(runningCost)}</span>
+      {/* Running cost — always visible, compact on mobile */}
+      <div className="flex items-center gap-0.5 sm:gap-1 text-muted-foreground shrink-0">
+        <span className="font-semibold text-foreground text-[10px] sm:text-xs">{formatCurrency(runningCost)}</span>
       </div>
 
-      {/* Remaining balance — hidden on mobile */}
-      <div className="hidden sm:flex items-center gap-1 text-muted-foreground shrink-0">
-        <Wallet className="size-3" aria-hidden="true" />
-        <span>Sisa:</span>
-        <span className="font-medium text-foreground">{formatCurrency(balance - runningCost)}</span>
+      {/* Remaining balance — compact on mobile, full on desktop */}
+      <div className="flex items-center gap-0.5 sm:gap-1 text-muted-foreground shrink-0">
+        <Wallet className="size-2.5 sm:size-3" aria-hidden="true" />
+        <span className="hidden sm:inline">Sisa:</span>
+        <span className="font-medium text-foreground text-[10px] sm:text-xs">{formatCurrency(balance - runningCost)}</span>
       </div>
 
       {/* Spacer */}

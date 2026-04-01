@@ -8,6 +8,7 @@ import logging
 import os
 import signal
 import time
+import urllib.parse
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -259,8 +260,9 @@ class SessionManager:
 
         # Build proxy URL with auth
         if username and password:
-            # Insert auth into proxy URL: socks5://user:pass@host:port
-            proxy_url = server.replace("://", f"://{username}:{password}@", 1)
+            safe_user = urllib.parse.quote(username, safe="")
+            safe_pass = urllib.parse.quote(password, safe="")
+            proxy_url = server.replace("://", f"://{safe_user}:{safe_pass}@", 1)
         else:
             proxy_url = server
 

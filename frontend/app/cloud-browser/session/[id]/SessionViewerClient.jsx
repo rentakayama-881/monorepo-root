@@ -39,6 +39,7 @@ export default function SessionViewerClient() {
   const rfbRef = useRef(null);
   const containerRef = useRef(null);
   const kbInputRef = useRef(null);
+  const webrtcRef = useRef(null);
 
   const isTouchDevice = typeof window !== "undefined" && ("ontouchstart" in window || navigator.maxTouchPoints > 0);
 
@@ -180,11 +181,17 @@ export default function SessionViewerClient() {
   const toggleKeyboard = useCallback(() => {
     setShowKeyboard((prev) => {
       const next = !prev;
-      if (next) setTimeout(() => kbInputRef.current?.focus(), 50);
-      else kbInputRef.current?.blur();
+      if (streamMode === "vnc") {
+        if (next) setTimeout(() => kbInputRef.current?.focus(), 50);
+        else kbInputRef.current?.blur();
+      } else {
+        // WebRTC mode — delegate to WebRTCViewer ref
+        if (next) setTimeout(() => webrtcRef.current?.focusKeyboard(), 50);
+        else webrtcRef.current?.blurKeyboard();
+      }
       return next;
     });
-  }, []);
+  }, [streamMode]);
 
   // ── Render states ──
   if (isLoading) {
@@ -228,7 +235,7 @@ export default function SessionViewerClient() {
       <SessionToolbar
         session={session} pricing={pricing} onStop={handleStop}
         onToggleFullscreen={toggleFullscreen}
-        onToggleKeyboard={isTouchDevice && streamMode === "vnc" ? toggleKeyboard : null}
+        onToggleKeyboard={isTouchDevice ? toggleKeyboard : null}
         isFullscreen={isFullscreen} showKeyboard={showKeyboard} stopping={stopping}
       />
 
@@ -252,9 +259,11 @@ export default function SessionViewerClient() {
       <div className="flex-1 bg-black relative overflow-hidden touch-none">
         {streamMode === "webrtc" ? (
           <WebRTCViewer
+            ref={webrtcRef}
             sessionId={sessionId}
             apiBase={getBrowserBase()}
             token={token}
+            showKeyboard={showKeyboard}
             onConnected={onWebRTCConnected}
             onDisconnected={onWebRTCDisconnected}
             onFailed={onWebRTCFailed}
@@ -278,8 +287,8 @@ export default function SessionViewerClient() {
           aria-label="Keyboard input" onInput={handleKbInput} onKeyDown={handleKbKeyDown} />
       ) : null}
 
-      {/* Mobile keyboard FAB — VNC mode only */}
-      {isTouchDevice && streamMode === "vnc" && connectionStatus === "connected" ? (
+      {/* Mobile keyboard FAB — both VNC and WebRTC modes */}
+      {isTouchDevice && connectionStatus === "connected" ? (
         <button type="button" onClick={toggleKeyboard}
           className={cn("fixed bottom-4 right-4 z-50 flex items-center justify-center",
             "size-12 rounded-full shadow-lg transition-all active:scale-95",

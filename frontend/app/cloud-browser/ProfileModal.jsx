@@ -25,9 +25,9 @@ export default function ProfileModal({ open, profile, onSave, onClose, saving })
 
   const [values, setValues] = useState({
     name: profile?.name || "",
-    proxy_server: profile?.proxy_server || profile?.proxy_host || "",
-    proxy_username: profile?.proxy_username || "",
-    proxy_password: profile?.proxy_password || "",
+    proxy_server: profile?.proxyServer || profile?.proxy_server || profile?.proxy_host || "",
+    proxy_username: profile?.proxyUsername || profile?.proxy_username || "",
+    proxy_password: profile?.proxyPassword || profile?.proxy_password || "",
     notes: profile?.notes || "",
   });
   const [errors, setErrors] = useState({});

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, forwardRef, useImperativeHandle } from "react";
 
 /**
  * WebRTCViewer — connects to the browser session via WebRTC.
@@ -12,20 +12,29 @@ import { useEffect, useRef, useState, useCallback } from "react";
  *  - onConnected: () => void
  *  - onDisconnected: () => void
  *  - onFailed: () => void
+ *  - showKeyboard: boolean (mobile keyboard visible)
  */
-export default function WebRTCViewer({
+const WebRTCViewer = forwardRef(function WebRTCViewer({
   sessionId,
   apiBase,
   token,
   onConnected,
   onDisconnected,
   onFailed,
-}) {
+  showKeyboard = false,
+}, ref) {
   const videoRef = useRef(null);
   const pcRef = useRef(null);
   const dcRef = useRef(null);
   const containerRef = useRef(null);
+  const kbInputRef = useRef(null);
   const [status, setStatus] = useState("connecting");
+
+  // Expose focusKeyboard to parent for mobile keyboard toggle
+  useImperativeHandle(ref, () => ({
+    focusKeyboard: () => kbInputRef.current?.focus(),
+    blurKeyboard: () => kbInputRef.current?.blur(),
+  }), []);
 
   // Dimensions of the remote screen (from video metadata)
   const remoteSize = useRef({ width: 1920, height: 1080 });
@@ -266,6 +275,41 @@ export default function WebRTCViewer({
     }
   }, []);
 
+  // ── Mobile keyboard input handlers ──
+  const handleKbInput = useCallback((e) => {
+    const inputType = e.nativeEvent?.inputType || "";
+    if (inputType === "deleteContentBackward") {
+      sendInput({ type: "keydown", key: "Backspace" });
+    } else if (inputType === "insertLineBreak") {
+      sendInput({ type: "keydown", key: "Enter" });
+    } else {
+      const text = e.nativeEvent?.data;
+      if (text) {
+        for (const ch of text) {
+          sendInput({ type: "keypress", key: ch });
+        }
+      }
+    }
+    if (kbInputRef.current) kbInputRef.current.value = "";
+  }, [sendInput]);
+
+  const handleKbKeyDown = useCallback((e) => {
+    const special = ["Backspace", "Enter", "Tab", "Escape", "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Delete", "Home", "End"];
+    if (special.includes(e.key)) {
+      e.preventDefault();
+      sendInput({ type: "keydown", key: e.key });
+    }
+  }, [sendInput]);
+
+  // Focus/blur keyboard when showKeyboard prop changes
+  useEffect(() => {
+    if (showKeyboard) {
+      setTimeout(() => kbInputRef.current?.focus(), 50);
+    } else {
+      kbInputRef.current?.blur();
+    }
+  }, [showKeyboard]);
+
   return (
     <div
       ref={containerRef}
@@ -302,6 +346,22 @@ export default function WebRTCViewer({
           </div>
         </div>
       ) : null}
+
+      {/* Hidden input for mobile keyboard */}
+      <input
+        ref={kbInputRef}
+        type="text"
+        autoComplete="off"
+        autoCorrect="off"
+        autoCapitalize="off"
+        spellCheck={false}
+        className="fixed -left-[9999px] top-0 opacity-0 w-0 h-0"
+        aria-label="Keyboard input"
+        onInput={handleKbInput}
+        onKeyDown={handleKbKeyDown}
+      />
     </div>
   );
-}
+});
+
+export default WebRTCViewer;

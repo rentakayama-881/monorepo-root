@@ -42,7 +42,7 @@ export default function ProfileCard({
   onDelete,
   starting,
 }) {
-  const hasProxy = Boolean(profile.proxy_server || profile.proxy_host);
+  const hasProxy = Boolean(profile.proxyServer || profile.proxy_server || profile.proxy_host);
   const platform = profile.platform || profile.fingerprint?.platform || "Win32";
   const platformLabel = PLATFORM_LABELS[platform] || platform;
   const lastUsed = formatLastUsed(profile.last_used_at || profile.updated_at);
