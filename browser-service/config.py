@@ -32,8 +32,16 @@ class Settings(BaseSettings):
     profile_max_age_days: int = 30
     profile_cleanup_interval_hours: int = 24
 
-    # WebSocket domain for VNC connections
+    # WebSocket domain for VNC connections (fallback mode)
     browser_ws_domain: str = "browser.aivalid.id"
+
+    # Streaming mode: "webrtc" or "vnc"
+    stream_mode: str = "webrtc"
+
+    # WebRTC settings
+    webrtc_video_bitrate: int = 1_500_000   # 1.5 Mbps (safe for QEMU vCPU)
+    webrtc_fps: int = 15                    # 15fps — balanced for QEMU without AVX
+    webrtc_stun_server: str = "stun:stun.l.google.com:19302"
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
 

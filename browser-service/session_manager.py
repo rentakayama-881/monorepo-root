@@ -32,6 +32,8 @@ class SessionProcess:
     vnc_pid: int | None = None
     ws_pid: int | None = None
     playwright_context: object | None = field(default=None, repr=False)
+    webrtc_stream: object | None = field(default=None, repr=False)
+    stream_mode: str = "vnc"  # "webrtc" or "vnc"
 
 
 class SessionManager:
@@ -489,58 +491,74 @@ class SessionManager:
             except Exception:
                 pass
 
-            # ── 4. Start x11vnc ───────────────────────────────────────
-            vnc_cmd = [
-                "x11vnc",
-                "-display", f":{display_num}",
-                "-rfbport", str(vnc_port),
-                "-shared",          # allow multiple connections
-                "-forever",         # don't exit after first client disconnect
-                "-nopw",            # no password (auth via WebSocket layer)
-                "-noxdamage",       # better compatibility
-                "-cursor", "most",
-                "-noscr",           # disable scrollcopyrect
-                "-nowf",            # disable wireframe
-                "-threads",         # threaded encoding for better mobile perf
-                "-wait", "20",      # lower polling interval (ms) for responsiveness
-            ]
-            logger.info(
-                "Memulai x11vnc di port %d untuk display :%d",
-                vnc_port, display_num,
-            )
-            vnc_proc = await asyncio.create_subprocess_exec(
-                *vnc_cmd,
-                stdout=asyncio.subprocess.DEVNULL,
-                stderr=asyncio.subprocess.DEVNULL,
-            )
-            await asyncio.sleep(0.5)
+            # ── 4–5. Start streaming layer (WebRTC or VNC) ───────────
+            use_webrtc = settings.stream_mode == "webrtc"
+            webrtc_stream_obj = None
 
-            if vnc_proc.returncode is not None:
-                raise RuntimeError(
-                    f"x11vnc gagal dimulai (exit code: {vnc_proc.returncode})"
+            if use_webrtc:
+                # WebRTC mode: create BrowserStream (no x11vnc/websockify needed)
+                from webrtc_stream import BrowserStream
+                webrtc_stream_obj = BrowserStream(
+                    display_num=display_num,
+                    width=width,
+                    height=height,
                 )
-
-            # ── 5. Start websockify ───────────────────────────────────
-            ws_cmd = [
-                "websockify",
-                str(ws_port),
-                f"localhost:{vnc_port}",
-            ]
-            logger.info(
-                "Memulai websockify di port %d → VNC port %d",
-                ws_port, vnc_port,
-            )
-            ws_proc = await asyncio.create_subprocess_exec(
-                *ws_cmd,
-                stdout=asyncio.subprocess.DEVNULL,
-                stderr=asyncio.subprocess.DEVNULL,
-            )
-            await asyncio.sleep(0.3)
-
-            if ws_proc.returncode is not None:
-                raise RuntimeError(
-                    f"websockify gagal dimulai (exit code: {ws_proc.returncode})"
+                logger.info(
+                    "WebRTC stream siap untuk display :%d (%dx%d)",
+                    display_num, width, height,
                 )
+            else:
+                # VNC fallback mode
+                vnc_cmd = [
+                    "x11vnc",
+                    "-display", f":{display_num}",
+                    "-rfbport", str(vnc_port),
+                    "-shared",
+                    "-forever",
+                    "-nopw",
+                    "-noxdamage",
+                    "-cursor", "most",
+                    "-noscr",
+                    "-nowf",
+                    "-threads",
+                    "-wait", "20",
+                ]
+                logger.info(
+                    "Memulai x11vnc di port %d untuk display :%d",
+                    vnc_port, display_num,
+                )
+                vnc_proc = await asyncio.create_subprocess_exec(
+                    *vnc_cmd,
+                    stdout=asyncio.subprocess.DEVNULL,
+                    stderr=asyncio.subprocess.DEVNULL,
+                )
+                await asyncio.sleep(0.5)
+
+                if vnc_proc.returncode is not None:
+                    raise RuntimeError(
+                        f"x11vnc gagal dimulai (exit code: {vnc_proc.returncode})"
+                    )
+
+                ws_cmd = [
+                    "websockify",
+                    str(ws_port),
+                    f"localhost:{vnc_port}",
+                ]
+                logger.info(
+                    "Memulai websockify di port %d → VNC port %d",
+                    ws_port, vnc_port,
+                )
+                ws_proc = await asyncio.create_subprocess_exec(
+                    *ws_cmd,
+                    stdout=asyncio.subprocess.DEVNULL,
+                    stderr=asyncio.subprocess.DEVNULL,
+                )
+                await asyncio.sleep(0.3)
+
+                if ws_proc.returncode is not None:
+                    raise RuntimeError(
+                        f"websockify gagal dimulai (exit code: {ws_proc.returncode})"
+                    )
 
             # ── 6. Track session ──────────────────────────────────────
             session = SessionProcess(
@@ -552,15 +570,18 @@ class SessionManager:
                 ws_port=ws_port,
                 xvfb_pid=xvfb_proc.pid,
                 browser_pid=browser_pid,
-                vnc_pid=vnc_proc.pid,
-                ws_pid=ws_proc.pid,
+                vnc_pid=vnc_proc.pid if not use_webrtc else None,
+                ws_pid=ws_proc.pid if not use_webrtc else None,
                 playwright_context=context,
+                webrtc_stream=webrtc_stream_obj,
+                stream_mode="webrtc" if use_webrtc else "vnc",
             )
             self._sessions[session_id] = session
 
+            mode_label = "WebRTC" if use_webrtc else f"VNC:{vnc_port}/WS:{ws_port}"
             logger.info(
-                "Sesi %s berhasil dimulai — VNC: %d, WS: %d, display: :%d",
-                session_id, vnc_port, ws_port, display_num,
+                "Sesi %s berhasil dimulai — %s, display: :%d",
+                session_id, mode_label, display_num,
             )
             return session
 
@@ -606,6 +627,13 @@ class SessionManager:
                 logger.warning(
                     "Gagal menutup Playwright context sesi %s: %s", session_id, e,
                 )
+
+        # 1b. Close WebRTC stream if active
+        if session.webrtc_stream:
+            try:
+                await session.webrtc_stream.close()
+            except Exception as e:
+                logger.warning("Gagal menutup WebRTC stream sesi %s: %s", session_id, e)
 
         # 2. Kill processes in reverse order: websockify → x11vnc → browser → Xvfb
         await self._kill_process_safe(session.ws_pid, f"websockify[{session_id}]")

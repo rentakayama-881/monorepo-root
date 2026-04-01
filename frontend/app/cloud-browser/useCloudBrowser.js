@@ -9,7 +9,7 @@ import { swrConfig, authFetcher } from "@/lib/swr";
 // Shared auth token hook (mirrors lib/swr.js pattern)
 // ---------------------------------------------------------------------------
 
-function useAuthToken() {
+export function useAuthToken() {
   const [token, setToken] = useState(() => getToken());
 
   useEffect(() => {
@@ -25,7 +25,7 @@ function useAuthToken() {
 // Service base URLs
 // ---------------------------------------------------------------------------
 
-function getBrowserBase() {
+export function getBrowserBase() {
   return process.env.NEXT_PUBLIC_BROWSER_API_URL || "https://browser.aivalid.id";
 }
 

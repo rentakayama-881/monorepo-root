@@ -80,12 +80,15 @@ async def start_session(
             detail=str(e),
         )
 
-    # 7. Build VNC WebSocket URL
-    vnc_ws_url = f"wss://{settings.browser_ws_domain}/ws/{session.ws_port}"
+    # 7. Build response based on stream mode
+    vnc_ws_url = None
+    if session.stream_mode == "vnc":
+        vnc_ws_url = f"wss://{settings.browser_ws_domain}/ws/{session.ws_port}"
 
     return StartSessionResponse(
         session_id=session_id,
         vnc_ws_url=vnc_ws_url,
+        stream_mode=session.stream_mode,
         status="active",
     )
 
@@ -148,10 +151,13 @@ async def get_session_status(
             detail="Anda tidak memiliki akses ke sesi ini",
         )
 
-    vnc_ws_url = f"wss://{settings.browser_ws_domain}/ws/{session.ws_port}"
+    vnc_ws_url = None
+    if session.stream_mode == "vnc":
+        vnc_ws_url = f"wss://{settings.browser_ws_domain}/ws/{session.ws_port}"
 
     return SessionStatusResponse(
         session_id=session_id,
         status="active",
+        stream_mode=session.stream_mode,
         vnc_ws_url=vnc_ws_url,
     )

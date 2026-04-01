@@ -45,7 +45,9 @@ app.add_middleware(
 
 # Import and register routes
 from routes import router  # noqa: E402
+from webrtc_routes import router as webrtc_router  # noqa: E402
 app.include_router(router, prefix="/api/v1")
+app.include_router(webrtc_router, prefix="/api/v1")
 
 
 @app.get("/health")

@@ -11,7 +11,8 @@ class StartSessionRequest(BaseModel):
 
 class StartSessionResponse(BaseModel):
     session_id: str
-    vnc_ws_url: str = Field(..., description="WebSocket URL untuk noVNC connection")
+    vnc_ws_url: str | None = Field(None, description="WebSocket URL untuk noVNC (VNC mode)")
+    stream_mode: str = Field("vnc", description="'webrtc' or 'vnc'")
     status: str = "starting"
 
 class StopSessionResponse(BaseModel):
@@ -22,6 +23,7 @@ class StopSessionResponse(BaseModel):
 class SessionStatusResponse(BaseModel):
     session_id: str
     status: str
+    stream_mode: str = "vnc"
     vnc_ws_url: str | None = None
     started_at: str | None = None
     billed_minutes: int = 0

@@ -1,9 +1,13 @@
 FROM python:3.13-slim-bookworm
 
-# System dependencies for Xvfb + x11vnc + websockify
+# System dependencies for Xvfb + xdotool (input) + WebRTC (libvpx/opus)
+# Keep x11vnc/websockify for VNC fallback mode
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    xvfb x11vnc websockify \
+    xvfb x11vnc websockify xdotool \
     libxrender1 libxext6 libfontconfig1 libfreetype6 \
+    libvpx-dev libopus-dev libffi-dev \
+    libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libswresample-dev pkg-config \
+    build-essential \
     ca-certificates curl procps \
     && rm -rf /var/lib/apt/lists/*
 
@@ -26,9 +30,8 @@ ENV BROWSER_PROFILES_DIR=/data/profiles
 ENV SCREENSHOT_DIR=/data/screenshots
 
 EXPOSE 6100
-# VNC ports (x11vnc)
+# VNC ports — kept for fallback mode
 EXPOSE 6200-6299
-# WebSocket ports (websockify)
 EXPOSE 6300-6399
 
 HEALTHCHECK --interval=10s --timeout=3s --start-period=30s --retries=3 \

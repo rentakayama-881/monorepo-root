@@ -16,6 +16,8 @@ jest.mock("next/navigation", () => ({
 jest.mock("../../../useCloudBrowser", () => ({
   useSessionStatus: jest.fn(),
   usePricing: jest.fn(),
+  useAuthToken: jest.fn(() => "mock-token"),
+  getBrowserBase: jest.fn(() => "https://browser.aivalid.id"),
 }));
 
 jest.mock("@/lib/browserApi", () => ({
@@ -42,6 +44,13 @@ jest.mock("@novnc/novnc/lib/rfb", () => {
     sendCredentials: jest.fn(),
   }));
   return { __esModule: true, default: MockRFB };
+});
+
+// Mock WebRTCViewer dynamic import
+jest.mock("next/dynamic", () => () => {
+  const MockWebRTCViewer = (props) => <div data-testid="webrtc-viewer">WebRTC</div>;
+  MockWebRTCViewer.displayName = "MockWebRTCViewer";
+  return MockWebRTCViewer;
 });
 
 describe("SessionViewerClient", () => {
@@ -76,6 +85,7 @@ describe("SessionViewerClient", () => {
       session: {
         session_id: "session-123",
         status: "active",
+        stream_mode: "vnc",
         vnc_ws_url: "wss://browser.aivalid.id/ws/6300",
         started_at: new Date().toISOString(),
       },
@@ -85,7 +95,6 @@ describe("SessionViewerClient", () => {
     });
 
     render(<SessionViewerClient />);
-    // Toolbar should render with session info
     expect(screen.getByText("Hentikan Sesi")).toBeInTheDocument();
   });
 
@@ -94,6 +103,7 @@ describe("SessionViewerClient", () => {
       session: {
         session_id: "session-123",
         status: "active",
+        stream_mode: "vnc",
         vnc_ws_url: null,
         started_at: new Date().toISOString(),
       },
