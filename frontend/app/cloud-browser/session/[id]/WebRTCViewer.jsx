@@ -78,7 +78,14 @@ export default function WebRTCViewer({
 
     let destroyed = false;
     const pc = new RTCPeerConnection({
-      iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+      iceServers: [
+        { urls: "stun:stun.l.google.com:19302" },
+        {
+          urls: "turn:150.241.68.208:3478",
+          username: "aivalid",
+          credential: "de4c23a59e1c666cb8e206e583f2a5e3",
+        },
+      ],
     });
     pcRef.current = pc;
 

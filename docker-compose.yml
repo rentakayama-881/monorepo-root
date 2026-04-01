@@ -162,6 +162,21 @@ services:
         limits:
           memory: 128M
 
+  # =============================================================
+  # Coturn — TURN relay for WebRTC NAT traversal
+  # =============================================================
+  coturn:
+    image: coturn/coturn:4.6
+    container_name: aivalid-coturn
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - ./deploy/coturn/turnserver.conf:/etc/turnserver.conf:ro
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+
 volumes:
   pgdata:
     driver: local

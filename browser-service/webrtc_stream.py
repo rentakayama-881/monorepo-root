@@ -118,6 +118,12 @@ class BrowserStream:
         ice_servers = []
         if settings.webrtc_stun_server:
             ice_servers.append(RTCIceServer(urls=[settings.webrtc_stun_server]))
+        if settings.webrtc_turn_server:
+            ice_servers.append(RTCIceServer(
+                urls=[settings.webrtc_turn_server],
+                username=settings.webrtc_turn_username,
+                credential=settings.webrtc_turn_password,
+            ))
 
         config = RTCConfiguration(iceServers=ice_servers)
         self._pc = RTCPeerConnection(configuration=config)

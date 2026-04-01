@@ -3,7 +3,8 @@ import logging
 import os
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, status
+import httpx
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 
 from auth import UserContext, get_current_user
 from config import settings
@@ -20,9 +21,36 @@ logger = logging.getLogger("browser-service.routes")
 router = APIRouter()
 
 
+async def _fetch_profile_proxy(profile_id: str, auth_header: str) -> dict | None:
+    """Fetch proxy settings from Feature Service for a profile."""
+    url = f"{settings.feature_service_url}/api/v1/browser/profiles/{profile_id}"
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            resp = await client.get(url, headers={"Authorization": auth_header})
+            if resp.status_code != 200:
+                logger.warning("Feature-service profile fetch failed: %s", resp.status_code)
+                return None
+            data = resp.json()
+            proxy_server = data.get("proxyServer") or data.get("proxy_server")
+            if not proxy_server:
+                return None
+            proxy = {"server": proxy_server}
+            proxy_user = data.get("proxyUsername") or data.get("proxy_username")
+            proxy_pass = data.get("proxyPassword") or data.get("proxy_password")
+            if proxy_user:
+                proxy["username"] = proxy_user
+            if proxy_pass:
+                proxy["password"] = proxy_pass
+            return proxy
+    except Exception as e:
+        logger.error("Failed to fetch profile from feature-service: %s", e)
+        return None
+
+
 @router.post("/sessions/start", response_model=StartSessionResponse)
 async def start_session(
     request: StartSessionRequest,
+    raw_request: Request,
     user: UserContext = Depends(get_current_user),
 ):
     """Start a new browser session from a profile."""
@@ -53,14 +81,13 @@ async def start_session(
     # 4. Build profile directory path
     profile_dir = os.path.join(settings.browser_profiles_dir, request.profile_id)
 
-    # 5. Build proxy settings dict (if provided)
-    proxy = None
-    if request.proxy_server:
-        proxy = {"server": request.proxy_server}
-        if request.proxy_username:
-            proxy["username"] = request.proxy_username
-        if request.proxy_password:
-            proxy["password"] = request.proxy_password
+    # 5. Fetch proxy from Feature Service using user's token
+    auth_header = raw_request.headers.get("authorization", "")
+    proxy = await _fetch_profile_proxy(request.profile_id, auth_header)
+    if proxy:
+        logger.info("Proxy loaded for profile %s: %s", request.profile_id, proxy["server"])
+    else:
+        logger.info("No proxy for profile %s", request.profile_id)
 
     # 6. Start session via session manager
     try:
@@ -90,6 +117,7 @@ async def start_session(
         vnc_ws_url=vnc_ws_url,
         stream_mode=session.stream_mode,
         status="active",
+        started_at=session.started_at_utc,
     )
 
 
@@ -160,4 +188,5 @@ async def get_session_status(
         status="active",
         stream_mode=session.stream_mode,
         vnc_ws_url=vnc_ws_url,
+        started_at=session.started_at_utc,
     )

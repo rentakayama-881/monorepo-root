@@ -12,11 +12,9 @@ function validateForm(values) {
   if (!values.name || !values.name.trim()) {
     errors.name = "Nama profil wajib diisi.";
   }
-  if (
-    values.proxy_server &&
-    values.proxy_server.trim() &&
-    !PROXY_REGEX.test(values.proxy_server.trim())
-  ) {
+  if (!values.proxy_server || !values.proxy_server.trim()) {
+    errors.proxy_server = "Proxy server wajib diisi. Contoh: socks5://proxy.example.com:1080";
+  } else if (!PROXY_REGEX.test(values.proxy_server.trim())) {
     errors.proxy_server = "Format proxy tidak valid. Contoh: socks5://proxy.example.com:1080";
   }
   return errors;

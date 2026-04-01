@@ -35,6 +35,8 @@ public record BrowserProfileDto(
     string Id,
     string Name,
     string? ProxyServer,
+    string? ProxyUsername,
+    string? ProxyPassword,
     bool HasProxy,
     string UserAgentPreset,
     BrowserFingerprintDto Fingerprint,

@@ -228,6 +228,8 @@ public class BrowserProfileService : IBrowserProfileService
         Id: p.Id,
         Name: p.Name,
         ProxyServer: p.ProxyServer,
+        ProxyUsername: p.ProxyUsername,
+        ProxyPassword: p.ProxyPassword,
         HasProxy: !string.IsNullOrEmpty(p.ProxyServer),
         UserAgentPreset: p.UserAgentPreset,
         Fingerprint: new BrowserFingerprintDto(

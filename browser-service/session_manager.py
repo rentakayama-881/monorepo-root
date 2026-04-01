@@ -27,6 +27,7 @@ class SessionProcess:
     vnc_port: int
     ws_port: int
     started_at: float = field(default_factory=time.monotonic)
+    started_at_utc: str = field(default_factory=lambda: time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()))
     xvfb_pid: int | None = None
     browser_pid: int | None = None
     vnc_pid: int | None = None

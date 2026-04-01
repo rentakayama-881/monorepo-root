@@ -10,8 +10,8 @@ class Settings(BaseSettings):
     jwt_secret: str = "change-me-in-production"
     jwt_algorithm: str = "HS256"
 
-    # Feature Service
-    feature_service_url: str = "http://127.0.0.1:5000"
+    # Feature Service (internal Docker network)
+    feature_service_url: str = "http://feature-service:5000"
     feature_service_token: str = ""
 
     # Browser limits
@@ -42,6 +42,9 @@ class Settings(BaseSettings):
     webrtc_video_bitrate: int = 1_500_000   # 1.5 Mbps (safe for QEMU vCPU)
     webrtc_fps: int = 15                    # 15fps — balanced for QEMU without AVX
     webrtc_stun_server: str = "stun:stun.l.google.com:19302"
+    webrtc_turn_server: str = "turn:150.241.68.208:3478"
+    webrtc_turn_username: str = "aivalid"
+    webrtc_turn_password: str = "de4c23a59e1c666cb8e206e583f2a5e3"
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
 
